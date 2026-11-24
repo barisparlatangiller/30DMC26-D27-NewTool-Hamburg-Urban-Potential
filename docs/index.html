@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
-<link href="style.css?v=1" rel="stylesheet">
+<link href="style.css?v=3" rel="stylesheet">
 </head>
 <body>
 <div id="map"></div>
@@ -20,11 +20,16 @@
   <div class="eb">#30DayMapChallenge · Day 27 · New Tool · Hamburg</div>
   <h1>Urban Potential Explorer</h1>
   <p class="sub">Bebauungsplan <b>Barmbek-Süd 42</b> (2019): one block between Dehnhaide and Stückenstraße. For every parcel: what the plan allows, what stands today, and what could realistically be added.</p>
-  <div class="seg" id="modes"><button data-m="theo" class="on">Theoretical</button><button data-m="feas">Feasible</button></div>
-  <p class="fine" id="modenote"></p>
   <div id="kpi"></div>
-  <div id="legend"></div>
-  <div id="card"><p class="hint">Click a parcel to see its numbers.</p></div>
+  <p class="how"><b>How to use:</b> parcels are coloured by how much could realistically be added. Click a parcel on the map or in the list to open it: its own volumes appear in 3D, everything else steps back. Click again to close.</p>
+  <div id="legend">
+    <div class="ramp"><span>Feasible addition per m² of parcel</span><i></i><em><b>none</b><b>high</b></em></div>
+    <div class="keys"><span><i style="background:#c4a27a"></i>Buildings today</span><span><i style="background:#e07a5f;opacity:.55"></i>Plan envelope</span><span><i style="background:#7cc6b8"></i>New building</span><span><i style="background:#2a9d8f"></i>Rooftop +1/+2</span></div>
+  </div>
+  <div id="show"><label><input type="checkbox" name="env" checked> Plan envelope (on paper)</label><label><input type="checkbox" name="feas" checked> Feasible additions</label></div>
+  <div class="lh"><h3 id="np">parcels</h3><select id="sort"><option value="feas">by feasible m²</option><option value="theo">by m² on paper</option><option value="num">by number</option></select></div>
+  <div class="lhead"><span>No.</span><span></span><span class="mk"><i class="t"></i>paper <i class="f"></i>feasible</span><span>m² feasible</span></div>
+  <ul id="plist"></ul>
   <details>
     <summary>Method and limits</summary>
     <div class="fine">
@@ -34,13 +39,13 @@
       <p><b>Feasible</b> keeps today's buildings standing: new building only on unbuilt ground inside the building limits (3 m clear of existing buildings, at least 8 m wide and 120 m²) and within the GRZ still free; rooftop extensions up to the storey limit but at most +2 storeys, one fewer on pitched roofs (the attic already counts), none on buildings under 60 m²; the listed building stays as it is.</p>
       <p>Homes ≈ gross floor area ÷ 90 m², residential zones only. GRZ overruns for parking (§19(4) BauNVO), noise rules, distances, ownership and economics are left out.</p>
       <p>⚠️ A scenario on the published plan, not a planning or legal assessment.</p>
-      <p>Data: Freie und Hansestadt Hamburg, LGV / Bezirksamt Hamburg-Nord, Datenlizenz Deutschland – Namensnennung 2.0 (ALKIS parcels, LoD2, B-Plan). Base map © OpenStreetMap contributors, © CARTO.</p>
+      <p>Data: Freie und Hansestadt Hamburg, LGV / Bezirksamt Hamburg-Nord / BUKEA, Datenlizenz Deutschland – Namensnennung 2.0 (ALKIS parcels, LoD2, B-Plan, street tree register; trees drawn schematically from their crown size, trees on private ground are not in the register). Parks and main roads: © OpenStreetMap contributors. Base map © OpenStreetMap contributors, © CARTO.</p>
       <p><a href="https://github.com/barisparlatangiller/30DMC26-D27-NewTool-Hamburg-Urban-Potential">Code and pipeline on GitHub</a> · Barış Parlatangiller</p>
     </div>
   </details>
 </aside>
 <div id="tip"></div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="app.js?v=1"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>

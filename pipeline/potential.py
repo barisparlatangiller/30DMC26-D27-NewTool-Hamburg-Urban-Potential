@@ -57,7 +57,8 @@ parcels = []; NEW = []; ENV = []; AUF = []
 for f in FC("build/parcels.geojson"):
     g = shape(f["geometry"]).buffer(0)
     piece = g.intersection(PLAN)
-    if piece.area < 25:
+    if piece.area < 25 or piece.area < 0.5 * g.area:      # streets and slivers that only graze the plan boundary
+        if piece.area >= 25: print("skip", f["properties"]["label"], round(piece.area), "of", round(g.area))
         continue
     A = piece.area
     # zone = largest overlap; parcels across zones are split by area share

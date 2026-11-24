@@ -4,7 +4,7 @@
 
 Live: https://barisparlatangiller.github.io/30DMC26-D27-NewTool-Hamburg-Urban-Potential/
 
-An interactive 3D tool for one Hamburg block (Bebauungsplan Barmbek-Süd 42, 2019). It shows four things for each of the block's 29 parcels:
+An interactive 3D tool for one Hamburg block (Bebauungsplan Barmbek-Süd 42, 2019). It shows four things for each of the block's 26 parcels:
 - what the plan allows;
 - what stands today (LoD2);
 - how much is still free **on paper** (theoretical);
@@ -12,12 +12,12 @@ An interactive 3D tool for one Hamburg block (Bebauungsplan Barmbek-Süd 42, 201
 
 | Block total | m² gross floor area |
 |---|---|
-| Allowed by the plan | 36,151 |
+| Allowed by the plan | 34,199 |
 | Built today (LoD2) | 24,116 |
-| Still free on paper | +13,477 |
-| Feasible (new building + rooftop extensions) | +11,579 (of which rooftop +3,606) |
+| Still free on paper | +11,525 |
+| Feasible (new building + rooftop extensions) | +10,254 (of which rooftop +3,606) |
 
-Residential parcels (WA): +3,125 m² on paper and +2,587 m² feasible, which is about 29 homes at 90 m² gross each. Six parcels are already built beyond what the plan allows.
+Residential parcels (WA): +1,800 m² on paper and +1,262 m² feasible, which is about 14 homes at 90 m² gross each. Six parcels are already built beyond what the plan allows.
 
 ## Pipeline
 ```
@@ -31,6 +31,7 @@ python pipeline/potential.py                                                # pe
 
 ## Rules
 - **Existing:** LoD2 footprint × `storeysAboveGround` (otherwise eave ÷ 3 m).
+- **Parcels:** ALKIS parcels with at least half of their area inside the plan (26). Streets and slivers along the boundary are left out.
 - **Theoretical:** GFZ × parcel area. Where the plan sets no GFZ: GRZ × parcel area × storey limit. Minus existing.
 - **Feasible:** today's buildings stay.
   - New building only on free ground inside the Baugrenzen: 3 m clear of existing buildings, at least 8 m wide and 120 m², and within the GRZ still free.
