@@ -91,6 +91,7 @@ function init() {
   const cam = map.cameraForBounds(all, { padding: { top: 70, bottom: 70, left: 50, right: 50 }, bearing: HOME.bearing });
   if (cam) { HOME.center = [cam.center.lng, cam.center.lat]; HOME.zoom = cam.zoom - 0.15; }
   map.jumpTo(HOME);
+  const far = () => document.body.classList.toggle("far", map.getZoom() < 16.85); map.on("zoom", far); far();
   document.getElementById("np").textContent = ps.length + " parcels";
   kpi(); list(); apply();
   window.__ready = true;

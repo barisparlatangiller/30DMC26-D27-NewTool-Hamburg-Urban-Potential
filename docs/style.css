@@ -65,3 +65,4 @@ body.film #panel, body.film #views, body.film .maplibregl-ctrl { display: none !
 body.open .pnum:not(.on) { opacity: .45; }
 .street { font: italic 500 12px Inter; color: #6f6a62; letter-spacing: .03em; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 4px #fff; pointer-events: none; white-space: nowrap; }
 :root { --feas: #2a9d8f; --theo: #e07a5f; }
+body.far .pnum:not(.on) { display: none; } body.far .street { font-size: 10.5px; }
