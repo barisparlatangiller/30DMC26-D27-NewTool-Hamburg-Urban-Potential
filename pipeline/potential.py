@@ -53,7 +53,8 @@ def bld_storeys(p):
     e = p.get("eave") or p.get("h") or 3
     return max(1, round(e / STOREY_H))
 
-parcels = []; NEW = []; ENV = []; AUF = []
+parcels = []; NEW = {2: [], 3: []}; ENV = []; AUF = {1: [], 2: []}
+EDGE = PLAN.exterior.buffer(16).intersection(PLAN)        # a 16 m strip along the streets that frame the block
 for f in FC("build/parcels.geojson"):
     g = shape(f["geometry"]).buffer(0)
     piece = g.intersection(PLAN)
@@ -82,32 +83,39 @@ for f in FC("build/parcels.geojson"):
                      "addr": bp.get("addr"), "lim": storeys_at(part.buffer(-0.5)) or st_max, "_g": part})
     fp_ex = sum(b["fp"] for b in blds); gf_ex = sum(b["fp"] * b["st"] for b in blds)
     theo = max(0.0, gf_allow - gf_ex)
-    # feasible
-    if True:
-        built = unary_union([b["_g"] for b in blds]) if blds else None
-        free_bf = (bfp.difference(built.buffer(3)) if built else bfp).difference(DENK.buffer(3))
-        free_bf = free_bf.buffer(-4, join_style=2).buffer(4, join_style=2)                      # a building needs ≥ 8 m width
-        free_bf = unary_union([q for q in getattr(free_bf, "geoms", [free_bf]) if q.area >= 120])
-        if free_bf.is_empty: free_bf = piece.difference(piece)
-        new_fp = max(0.0, min(free_bf.area, fp_allow - fp_ex))
-        new_gf = new_fp * st_max
-        up = 0.0
-        for b in blds:
-            add = min(MAX_ADD, max(0, b["lim"] - b["st"]))
-            if b["roof"] and b["roof"] not in ("1000",) and add > 0:     # 1000 = flat roof (AdV code); pitched: one level is the existing attic
-                add -= 1
-            b["listed"] = int(b["_g"].intersection(DENK).area > 0.5 * b["fp"])
-            if b["fp"] >= 60 and not b["listed"]:
-                b["add"] = add; up += b["fp"] * add
-                if add > 0:
-                    AUF.append({"type": "Feature", "properties": {"parcel": f["properties"]["label"], "base": b["h"], "top": round(b["h"] + add * STOREY_H, 1)},
-                                "geometry": mapping(transform(TF, b["_g"]))})
-            else:
-                b["add"] = 0
-        feas = max(0.0, min(theo, new_gf + up))
-        if free_bf.area > 1 and new_fp > 1:
-            NEW.append({"type": "Feature", "properties": {"parcel": f["properties"]["label"], "h": round(st_max * STOREY_H * min(1, new_fp / free_bf.area), 1)},
-                        "geometry": mapping(transform(TF, free_bf))})
+    # three scenarios, from cautious to maximal; all keep today's buildings and are capped by the floor area still free
+    lab = f["properties"]["label"]
+    built = unary_union([b["_g"] for b in blds]) if blds else None
+    free_bf = (bfp.difference(built.buffer(3)) if built else bfp).difference(DENK.buffer(3))
+    free_bf = free_bf.buffer(-4, join_style=2).buffer(4, join_style=2)                      # a building needs ≥ 8 m width
+    clean = lambda g: unary_union([q for q in getattr(g, "geoms", [g]) if q.area >= 120]) if not g.is_empty else g
+    free_all = clean(free_bf)
+    free_street = clean(free_bf.intersection(EDGE).buffer(-4, join_style=2).buffer(4, join_style=2))   # gaps along the street; yards stay free
+    fp_left = max(0.0, fp_allow - fp_ex)
+    up1 = up2 = 0.0
+    for b in blds:
+        b["listed"] = int(b["_g"].intersection(DENK).area > 0.5 * b["fp"])
+        room = max(0, b["lim"] - b["st"])
+        ok = b["fp"] >= 60 and not b["listed"]
+        b["add1"] = min(1, room) if ok else 0
+        a2 = min(MAX_ADD, room)
+        if b["roof"] and b["roof"] != "1000" and a2 > 0:      # 1000 = flat roof (AdV code); pitched: one level is the existing attic
+            a2 -= 1
+        b["add"] = max(a2, b["add1"]) if ok else 0
+        up1 += b["fp"] * b["add1"]; up2 += b["fp"] * b["add"]
+        for k, key in ((1, "add1"), (2, "add")):
+            if b[key] > 0:
+                AUF[k].append({"type": "Feature", "properties": {"parcel": lab, "base": b["h"], "top": round(b["h"] + b[key] * STOREY_H, 1)},
+                               "geometry": mapping(transform(TF, b["_g"]))})
+    def newb(free, k):
+        fp = max(0.0, min(free.area if not free.is_empty else 0, fp_left))
+        if fp > 1:
+            NEW[k].append({"type": "Feature", "properties": {"parcel": lab, "h": round(st_max * STOREY_H * min(1, fp / free.area), 1)},
+                           "geometry": mapping(transform(TF, free))})
+        return fp
+    new2 = newb(free_street, 2); new3 = newb(free_all, 3)
+    s1 = min(theo, up1); s2 = min(theo, up2 + new2 * st_max); s3 = min(theo, up2 + new3 * st_max)
+    feas = s3; up = up2; new_fp = new3
     env = bfp.difference(DENK)
     if env.area > 1:
         ENV.append({"type": "Feature", "properties": {"parcel": f["properties"]["label"], "h": st_max * STOREY_H}, "geometry": mapping(transform(TF, env))})
@@ -115,8 +123,10 @@ for f in FC("build/parcels.geojson"):
     parcels.append({"label": f["properties"]["label"], "area": round(A), "zone": zp["id"], "use": zp["use"], "grz": zp["grz"], "gfz": zp["gfz"],
                     "st_max": st_max, "denkmal": denk, "fp_allow": round(fp_allow), "gf_allow": round(gf_allow), "fp_ex": round(fp_ex),
                     "gf_ex": round(gf_ex), "theo": round(theo), "feas": round(feas), "new_fp": round(new_fp), "up": round(up),
+                    "s1": round(s1), "s2": round(s2), "s3": round(s3), "up1": round(up1), "new2": round(new2), "new3": round(new3),
                     "buildings": blds, "geom": mapping(transform(TF, piece))})
-T = {k: sum(p[k] for p in parcels) for k in ("area", "gf_allow", "gf_ex", "theo", "feas", "up")}
+T = {k: sum(p[k] for p in parcels) for k in ("area", "gf_allow", "gf_ex", "theo", "feas", "up", "s1", "s2", "s3", "up1")}
+T["homes"] = {k: round(sum(p[k] for p in parcels if p["use"] == "WA") / FLAT, 1) for k in ("theo", "s1", "s2", "s3")}
 T["new_gf"] = T["feas"] - 0
 T["n"] = len(parcels)
 print(json.dumps(T))
@@ -133,8 +143,10 @@ for bp, bg in BLD:
     BOUT.append({"type": "Feature", "properties": {"id": bp["id"], "h": bp["h"], "eave": bp.get("eave"), "st": bld_storeys(bp), "in": int(inside), "add": add},
                  "geometry": mapping(transform(TF, bg))})
 json.dump({"type": "FeatureCollection", "features": BOUT}, open("build/web_buildings.geojson", "w"))
-json.dump({"type": "FeatureCollection", "features": AUF}, open("build/web_auf.geojson", "w"))
-json.dump({"type": "FeatureCollection", "features": NEW}, open("build/web_new.geojson", "w"))
+for k in (1, 2):
+    json.dump({"type": "FeatureCollection", "features": AUF[k]}, open(f"build/web_auf{k}.geojson", "w"))
+for k in (2, 3):
+    json.dump({"type": "FeatureCollection", "features": NEW[k]}, open(f"build/web_new{k}.geojson", "w"))
 json.dump({"type": "FeatureCollection", "features": ENV}, open("build/web_env.geojson", "w"))
 json.dump({"type": "FeatureCollection", "features": [{"type": "Feature", "properties": z, "geometry": mapping(transform(TF, g))} for z, g in Z]}, open("build/web_zones.geojson", "w"))
 for p in parcels:

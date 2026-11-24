@@ -13,11 +13,13 @@ An interactive 3D tool for one Hamburg block (Bebauungsplan Barmbek-Süd 42, 201
 | Block total | m² gross floor area |
 |---|---|
 | Allowed by the plan | 34,199 |
-| Built today (LoD2) | 24,116 |
+| Built today (LoD2) | 24,116 (71%) |
 | Still free on paper | +11,525 |
-| Feasible (new building + rooftop extensions) | +10,254 (of which rooftop +3,606) |
+| Scenario 1 · one more storey | +3,424 (30% of paper) |
+| Scenario 2 · roofs + street gaps, yards stay free | +7,289 (63%) |
+| Scenario 3 · maximum, yards built too | +10,792 (94%) |
 
-Residential parcels (WA): +1,800 m² on paper and +1,262 m² feasible, which is about 14 homes at 90 m² gross each. Six parcels are already built beyond what the plan allows.
+On the residential parcels (WA) this is about 6, 15 or 20 homes, at 90 m² gross each. Six parcels are already built beyond what the plan allows.
 
 ## Pipeline
 ```
@@ -33,12 +35,17 @@ python pipeline/potential.py                                                # pe
 - **Existing:** LoD2 footprint × `storeysAboveGround` (otherwise eave ÷ 3 m).
 - **Parcels:** ALKIS parcels with at least half of their area inside the plan (26). Streets and slivers along the boundary are left out.
 - **Theoretical:** GFZ × parcel area. Where the plan sets no GFZ: GRZ × parcel area × storey limit. Minus existing.
-- **Feasible:** today's buildings stay.
-  - New building only on free ground inside the Baugrenzen: 3 m clear of existing buildings, at least 8 m wide and 120 m², and within the GRZ still free.
-  - Rooftop extensions up to the storey limit, at most +2 storeys, one fewer on pitched roofs, none under 60 m².
-  - The listed building stays as it is.
-  - Everything is capped by the floor area still free.
-- **Left out:** parking overruns (§19(4) BauNVO), noise, distances, ownership and economics.
+- **Scenarios:** today's buildings stay, and the result is capped by the floor area still free on paper.
+  1. **One more storey:** +1 storey on every building below its limit.
+  2. **Roofs + street gaps:**
+     - rooftops up to the limit, at most +2 storeys, one fewer on pitched roofs;
+     - new buildings only in gaps within 16 m of the street, so the yards stay free.
+  3. **Maximum:** as scenario 2, plus new buildings in the yards.
+- **Common rules:**
+  - new ground: inside the Baugrenzen, at least 8 m wide and 120 m², 3 m from existing buildings, within the GRZ still free;
+  - no rooftop storeys on buildings under 60 m² or on the listed building.
+- **Not checked:** Abstandsflächen (HBauO), roof structure, yard use (delivery, parking), private trees, ownership, economics.
+- **3D:** additions are drawn unlit (deck.gl, material off) with dark edges, and the plan envelope as a dashed wire frame, so colours stay the same from every angle.
 
 ⚠️ A scenario on the published plan, not a planning or legal assessment.
 

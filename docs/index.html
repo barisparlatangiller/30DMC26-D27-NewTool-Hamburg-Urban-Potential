@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
-<link href="style.css?v=4" rel="stylesheet">
+<link href="style.css?v=5" rel="stylesheet">
 </head>
 <body>
 <div id="map"></div>
@@ -20,24 +20,33 @@
   <div class="eb">#30DayMapChallenge · Day 27 · New Tool · Hamburg</div>
   <h1>Urban Potential Explorer</h1>
   <p class="sub">Bebauungsplan <b>Barmbek-Süd 42</b> (2019): one block between Dehnhaide and Stückenstraße. For every parcel: what the plan allows, what stands today, and what could realistically be added.</p>
+  <h3>Choose a scenario</h3>
+  <div id="scen"></div>
+  <p class="fine" id="scnote"></p>
   <div id="kpi"></div>
-  <p class="how"><b>How to use:</b> parcels are coloured by how much could realistically be added. Click a parcel on the map or in the list to open it: its own volumes appear in 3D, everything else steps back. Click again to close.</p>
+  <p class="how"><b>How to use:</b> parcels are coloured by how much the chosen scenario adds. Click a parcel on the map or in the list to open it in 3D; click again to close.</p>
   <div id="legend">
-    <div class="ramp"><span>Feasible addition per m² of parcel</span><i></i><em><b>none</b><b>high</b></em></div>
-    <div class="keys"><span><i style="background:#c4a27a"></i>Buildings today</span><span><i style="background:#e07a5f;opacity:.55"></i>Plan envelope</span><span><i style="background:#7cc6b8"></i>New building</span><span><i style="background:#2a9d8f"></i>Rooftop +1/+2</span></div>
+    <div class="ramp"><span>Addition per m² of parcel, in the chosen scenario</span><i></i><em><b>none</b><b>high</b></em></div>
+    <div class="keys">
+      <span><i class="sw" style="background:#b9bec4;border-color:#5f6670"></i>Building today</span>
+      <span><i class="sw wire"></i>Plan envelope (what the plan allows)</span>
+      <span><i class="sw" style="background:#3d7fc1;border-color:#1e4f7f"></i>Rooftop storey</span>
+      <span><i class="sw" style="background:#2a9d8f;border-color:#155e55"></i>New building</span>
+    </div>
   </div>
-  <div id="show"><label><input type="checkbox" name="env" checked> Plan envelope (on paper)</label><label><input type="checkbox" name="feas" checked> Feasible additions</label></div>
-  <div class="lh"><h3 id="np">parcels</h3><select id="sort"><option value="feas">by feasible m²</option><option value="theo">by m² on paper</option><option value="num">by number</option></select></div>
-  <div class="lhead"><span>No.</span><span></span><span class="mk"><i class="t"></i>paper <i class="f"></i>feasible</span><span>m² feasible</span></div>
+  <div id="show"><label><input type="checkbox" name="env" checked> Plan envelope</label><label><input type="checkbox" name="add" checked> Additions</label></div>
+  <div class="lh"><h3 id="np">parcels</h3><select id="sort"><option value="sc">by scenario m²</option><option value="theo">by m² on paper</option><option value="num">by number</option></select></div>
+  <div class="lhead"><span>No.</span><span></span><span class="mk"><i class="t"></i>paper <i class="f"></i>scenario</span><span>m² added</span></div>
   <ul id="plist"></ul>
   <details>
     <summary>Method and limits</summary>
     <div class="fine">
       <p><b>Plan.</b> The plan sheet (Bezirksamt Hamburg-Nord, 2019) was fitted to the ALKIS parcels (accuracy ≈ 1 m) and the zones (WA/GE with GRZ, GFZ), building limits (Baugrenzen) and storey limits were digitised from it. The XPlanGML service had no geometry for this plan.</p>
       <p><b>Existing.</b> LoD2 building models (LGV Hamburg): footprint × storeys (from the model, otherwise eave height ÷ 3 m).</p>
-      <p><b>Theoretical</b> = what the numbers allow minus what exists: floor area GFZ × parcel, or, without a GFZ, GRZ × parcel × storey limit.</p>
-      <p><b>Feasible</b> keeps today's buildings standing: new building only on unbuilt ground inside the building limits (3 m clear of existing buildings, at least 8 m wide and 120 m²) and within the GRZ still free; rooftop extensions up to the storey limit but at most +2 storeys, one fewer on pitched roofs (the attic already counts), none on buildings under 60 m²; the listed building stays as it is.</p>
-      <p>Homes ≈ gross floor area ÷ 90 m², residential zones only. GRZ overruns for parking (§19(4) BauNVO), noise rules, distances, ownership and economics are left out.</p>
+      <p><b>On paper</b> = what the numbers allow minus what exists: floor area GFZ × parcel, or, without a GFZ, GRZ × parcel × storey limit.</p><p><b>Scenarios</b> keep every building standing and never exceed what is free on paper. <b>One more storey:</b> +1 storey on every building below its limit. <b>Roofs + street gaps:</b> rooftops up to the limit (max +2, one fewer on pitched roofs) and new buildings only in gaps within 16 m of the street; yards stay free. <b>Maximum:</b> also new buildings in the yards.</p>
+      <p>Common rules: new buildings only on unbuilt ground inside the building limits, 3 m clear of existing buildings, at least 8 m wide and 120 m², within the GRZ still free; no rooftop storeys on buildings under 60 m² or on the listed building.</p>
+      <p><b>Not checked:</b> distances between buildings (Abstandsflächen, HBauO), structure of each roof, how yards are used (delivery, parking), trees on private ground, ownership and economics. Treat the scenarios as a range, not a forecast.</p>
+      <p>Homes ≈ gross floor area ÷ 90 m², residential zones only.</p>
       <p>⚠️ A scenario on the published plan, not a planning or legal assessment.</p>
       <p>Data: Freie und Hansestadt Hamburg, LGV / Bezirksamt Hamburg-Nord / BUKEA, Datenlizenz Deutschland – Namensnennung 2.0 (ALKIS parcels, LoD2, B-Plan, street tree register; trees drawn schematically from their crown size, trees on private ground are not in the register). Parks and main roads: © OpenStreetMap contributors. Base map © OpenStreetMap contributors, © CARTO.</p>
       <p><a href="https://github.com/barisparlatangiller/30DMC26-D27-NewTool-Hamburg-Urban-Potential">Code and pipeline on GitHub</a> · Barış Parlatangiller</p>
@@ -46,6 +55,7 @@
 </aside>
 <div id="tip"></div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="app.js?v=4"></script>
+<script src="https://cdn.jsdelivr.net/npm/deck.gl@9.0.38/dist.min.js"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>
