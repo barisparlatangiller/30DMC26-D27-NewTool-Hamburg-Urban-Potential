@@ -3,42 +3,61 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Urban Potential Explorer</title>
+<title>Homes or Workshops?</title>
 <meta name="description" content="#30DayMapChallenge 2026 · Day 27 · New Tool. Hamburg, B-Plan Barmbek-Süd 42: how much more could be built on each parcel, on paper and in practice?">
-<meta property="og:title" content="Urban Potential Explorer · Barmbek-Süd 42">
+<meta property="og:title" content="Homes or workshops? · One Hamburg block, 26 parcels">
 <meta property="og:description" content="One Hamburg block, every parcel: what the plan allows, what stands today, and what could realistically be added.">
 <meta property="og:image" content="https://barisparlatangiller.github.io/30DMC26-D27-NewTool-Hamburg-Urban-Potential/og.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
-<link href="style.css?v=8" rel="stylesheet">
+<link href="style.css?v=9" rel="stylesheet">
 </head>
 <body>
 <div id="map"></div>
 <div id="views"><button data-v="persp" class="on">3D</button><button data-v="top">Plan</button><button id="spin" title="Orbit">⟳</button></div>
 <aside id="panel">
   <div class="eb">#30DayMapChallenge · Day 27 · New Tool · Hamburg</div>
-  <h1>Urban Potential Explorer</h1>
-  <p class="sub">Bebauungsplan <b>Barmbek-Süd 42</b> (2019): one block between Dehnhaide and Stückenstraße. For every parcel: what the plan allows, what stands today, and what could realistically be added.</p>
-  <h3>Choose a scenario</h3>
+  <h1>Homes or workshops?</h1>
+  <p class="sub">One Hamburg block, 26 parcels: how much more could be built here, and who would it be for?</p>
+  <p class="ctx">Hamburg finished about <b>6,000 new flats in 2025</b>. Adding floors to existing buildings is one way to find more room without new land. This tool tests that on one ordinary block in Barmbek-Süd, against what its local plan (<abbr title="Bebauungsplan: the local plan that fixes what may be built on each parcel">B-Plan</abbr> Barmbek-Süd 42, 2019) allows.</p>
+  <div id="answer"></div>
+  <div id="big"></div>
+  <button id="tour" class="tourbtn">▶ Take the 30-second tour</button>
+
+  <h3>How much do we build?</h3>
   <div id="scen"></div>
   <p class="fine" id="scnote"></p>
-  <label class="mu"><input type="checkbox" id="mu"> <span><b>What if</b> the commercial zone (GE) were an urban mixed zone (MU), where homes are allowed?</span></label>
-  <div id="kpi"></div>
-  <p class="how"><b>How to use:</b> parcels are coloured by how much the chosen scenario adds. Click a parcel on the map or in the list to open it in 3D; click again to close.</p>
+  <label class="mu"><input type="checkbox" id="mu"> <span><b>What if</b> homes were allowed in the commercial zone too? <abbr title="Urbanes Gebiet (MU): a mixed zone in German planning law where homes and businesses may share a block">(mixed zone, MU)</abbr></span></label>
+
   <div id="legend">
-    <div class="ramp"><span>Addition per m² of parcel, in the chosen scenario</span><i></i><em><b>none</b><b>high</b></em></div>
+    <div class="ramps"><div class="ramp h"><span>New flats per parcel</span><i></i><em><b>0</b><b>10+</b></em></div><div class="ramp j"><span>New workplaces per parcel</span><i></i><em><b>0</b><b>60+</b></em></div></div>
     <div class="keys">
-      <span><i class="sw" style="background:#c4cad1;border-color:#78808a"></i>Building today (open parcel)</span>
-      <span><i class="sw wire"></i>Plan envelope (what the plan allows)</span>
-      <span><i class="sw" style="background:#3d7fc1;border-color:#1e4f7f"></i>Rooftop storey</span>
+      <span><i class="sw" style="background:#c4cad1;border-color:#78808a"></i>Building today</span>
+      <span><i class="sw wire"></i>Everything the plan allows</span>
+      <span><i class="sw" style="background:#3d7fc1;border-color:#1e4f7f"></i>New floor on a roof</span>
       <span><i class="sw" style="background:#2a9d8f;border-color:#155e55"></i>New building</span>
     </div>
   </div>
-  <div id="show"><label><input type="checkbox" name="env" checked> Plan envelope</label><label><input type="checkbox" name="add" checked> Additions</label><label><input type="checkbox" name="photo" checked> Aerial photo</label></div>
-  <div class="lh"><h3 id="np">parcels</h3><select id="sort"><option value="sc">by scenario m²</option><option value="theo">by m² on paper</option><option value="num">by number</option></select></div>
-  <div class="lhead"><span>No.</span><span></span><span class="mk"><i class="t"></i>paper <i class="f"></i>scenario</span><span>m² added</span></div>
+  <div id="show"><label><input type="checkbox" name="env" checked> Plan limit</label><label><input type="checkbox" name="add" checked> Additions</label><label><input type="checkbox" name="photo" checked> Aerial photo</label></div>
+  <p class="how">Click a parcel on the map or in the list to open it in 3D; click again to close.</p>
+  <div class="lh"><h3 id="np">parcels</h3><select id="sort"><option value="sc">most added first</option><option value="theo">most room on paper</option><option value="num">by number</option></select></div>
+  <div class="lhead"><span>No.</span><span></span><span class="mk"><i class="t"></i>plan allows <i class="f"></i>chosen</span><span>adds</span></div>
   <ul id="plist"></ul>
+
+  <details class="pro">
+    <summary>For planners: the numbers in m²</summary>
+    <div id="kpi"></div>
+    <dl class="gloss">
+      <dt>GRZ</dt><dd>Grundflächenzahl: share of the parcel that buildings may cover (0.4 = 40%).</dd>
+      <dt>GFZ</dt><dd>Geschossflächenzahl: total floor area allowed per m² of parcel (1.7 = 1.7 m² per m²).</dd>
+      <dt>WA</dt><dd>Allgemeines Wohngebiet: residential zone.</dd>
+      <dt>GE</dt><dd>Gewerbegebiet: commercial zone; homes are not allowed (BauNVO § 8).</dd>
+      <dt>MU</dt><dd>Urbanes Gebiet: mixed zone where homes and businesses share a block.</dd>
+      <dt>Baugrenze</dt><dd>Building limit drawn on the plan; buildings must stay inside it.</dd>
+      <dt>LoD2</dt><dd>Official 3D building models with real roof shapes (LGV Hamburg).</dd>
+    </dl>
+  </details>
   <details>
     <summary>Method and limits</summary>
     <div class="fine">
@@ -55,8 +74,9 @@
   </details>
 </aside>
 <div id="tip"></div>
+<div id="tourbox" hidden><div class="tstep" id="tstep"></div><div id="ttext"></div><div class="tnav"><button id="tback">← back</button><button id="tclose">end tour ✕</button><button id="tnext" class="pri">next →</button></div></div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/deck.gl@9.0.38/dist.min.js"></script>
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>

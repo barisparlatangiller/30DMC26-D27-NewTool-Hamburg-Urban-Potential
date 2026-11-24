@@ -4,9 +4,9 @@
 // Volumes are drawn unlit (deck.gl, material off), so their colours stay the same from every side and angle.
 const C = { paper: "#e07a5f", s: "#2a9d8f", roof: "#3d7fc1", ex: "#b9bec4", exEdge: "#5f6670", envEdge: "#d9603e", ctx: "#ebe7e0", exIn: "#ddd5c8" };
 const SC = {
-  s1: { name: "One more storey", short: "+1 storey", note: "Only rooftops: every building below its storey limit gets one more storey (not the listed one, none under 60 m²). Nothing new on the ground." },
-  s2: { name: "Roofs + street gaps", short: "Roofs + gaps", note: "Rooftops up to the limit (max +2, one fewer on pitched roofs) and new buildings only in gaps along the street front (16 m deep). Yards stay free for access, delivery and trees." },
-  s3: { name: "Maximum", short: "Maximum", note: "As before, plus new buildings in the yards wherever the building limits allow (≥ 8 m wide, 3 m from other buildings). The upper end, not a recommendation." }
+  s1: { name: "Add one floor", short: "one floor", note: "Every building that is lower than the plan allows gets one more floor on top. Nothing new on the ground. The most cautious case." },
+  s2: { name: "Roofs + fill the gaps", short: "roofs + gaps", note: "Up to two more floors where the plan allows, and new buildings only in gaps along the street. The yards stay free for deliveries, parking and trees." },
+  s3: { name: "Everything the rules allow", short: "everything", note: "As before, plus new buildings in the back yards wherever the plan's building limits allow. The upper end, not a recommendation." }
 };
 let HOME = { center: [10.0468, 53.5799], zoom: 17.2, pitch: 50, bearing: 10 };
 const fmt = n => Math.round(n).toLocaleString("en-US");
@@ -66,6 +66,7 @@ function init() {
   const ps = D.P.parcels;
   ps.forEach((p, i) => { p.i = i; p.bb = bbox(p.geom); p.c = centre(p.geom); p.ids = new Set(p.buildings.map(b => b.id)); });
   const parcels = { type: "FeatureCollection", features: ps.map((p, i) => ({ type: "Feature", id: i, properties: { i, label: p.label, s1: p.s1 / p.area, s2: p.s2 / p.area, s3: p.s3 / p.area }, geometry: p.geom })) };
+  D.pfc = parcels;
   const inPlan = new Set(ps.flatMap(p => p.buildings.map(b => b.id)));
   D.B.features.forEach(f => f.properties.in = inPlan.has(f.properties.id) ? 1 : 0);
   // constant, soft light fixed to the map: the context buildings and trees no longer change tone when the map turns
@@ -133,7 +134,10 @@ function init() {
   document.querySelectorAll("#show input").forEach(cb => cb.onchange = () => { show[cb.name] = cb.checked; apply(); });
   document.querySelectorAll("#scen button").forEach(b => b.onclick = () => setSc(b.dataset.s));
   document.getElementById("sort").onchange = list;
-  document.getElementById("mu").onchange = e => { mu = e.target.checked; document.body.classList.toggle("mu", mu); kpi(); list(); };
+  document.getElementById("mu").onchange = e => setMu(e.target.checked);
+  document.getElementById("tour").onclick = () => tour(0);
+  document.getElementById("tnext").onclick = () => tour(tstep + 1); document.getElementById("tback").onclick = () => tour(tstep - 1);
+  document.getElementById("tclose").onclick = () => tour(-1);
   const all = ps.reduce((b, p) => [[Math.min(b[0][0], p.bb[0][0]), Math.min(b[0][1], p.bb[0][1])], [Math.max(b[1][0], p.bb[1][0]), Math.max(b[1][1], p.bb[1][1])]], [[180, 90], [-180, -90]]);
   const cam = map.cameraForBounds(all, { padding: { top: 70, bottom: 70, left: 50, right: 50 }, bearing: HOME.bearing });
   if (cam) { HOME.center = [cam.center.lng, cam.center.lat]; HOME.zoom = cam.zoom - 0.15; }
@@ -152,10 +156,31 @@ function scen() {          // the three scenario cards, with block totals
 function setSc(k) {
   sc = k; scen();
   document.getElementById("scnote").innerHTML = SC[k].note;
-  map.setPaintProperty("pfill", "fill-color", ["interpolate", ["linear"], ["get", k], 0, "#f1ede6", 0.15, "#cfe8e2", 0.6, "#6fbdaf", 1.4, "#1f7a6f"]);
+  paint();
   kpi(); list(); apply();
 }
+function paint() {          // colour = new flats (teal) or new workplaces (amber) per parcel, in the chosen scenario
+  const fc = D.pfc;
+  fc.features.forEach(f => { const p = D.P.parcels[f.properties.i], q = people(p, p[sc]); f.properties.k = housing(p) ? "h" : "j"; f.properties.v = housing(p) ? q.f : q.j; });
+  map.getSource("parcels").setData(fc);
+  map.setPaintProperty("pfill", "fill-color", ["case", ["==", ["get", "k"], "h"],
+    ["interpolate", ["linear"], ["get", "v"], 0, "#f1ede6", 1, "#cfe8e2", 4, "#6fbdaf", 10, "#1f7a6f"],
+    ["interpolate", ["linear"], ["get", "v"], 0, "#f1ede6", 5, "#f6dfb8", 25, "#e3a857", 60, "#b8741d"]]);
+}
+function totals(k, asMu) {
+  const keep = mu; mu = asMu;
+  const t = D.P.parcels.reduce((a, p) => { const q = people(p, p[k]); a.f += q.f; a.r += q.r; a.j += q.j; return a; }, { f: 0, r: 0, j: 0 });
+  mu = keep; return t;
+}
+function answer() {
+  const a = totals(sc, false), m = totals(sc, true), nm = SC[sc].name.toLowerCase();
+  document.getElementById("answer").innerHTML = `With today's plan, this block could take <em>≈ ${fmt(a.f)} more flats</em> (${nm}). Most of its room is kept for business: <i>≈ ${fmt(a.j)} workplaces</i>. If homes were allowed there too: <u>≈ ${fmt(m.f)} flats</u>.`;
+  document.getElementById("big").innerHTML = `<div class="h"><b>${fmt(a.f)}</b><span>new flats with today's plan · ≈ ${fmt(a.r)} people</span></div>
+    <div class="j"><b>${fmt(a.j)}</b><span>new workplaces in the commercial zone (if offices)</span></div>
+    <div class="m"><b>${fmt(m.f)}</b><span>new flats if homes were allowed everywhere · ≈ ${fmt(m.r)} people</span></div>`;
+}
 function kpi() {
+  answer();
   const T = D.P.totals, tot = D.P.parcels.reduce((a, p) => { const q = people(p, p[sc]); a.f += q.f; a.r += q.r; a.j += q.j; return a; }, { f: 0, r: 0, j: 0 });
   document.getElementById("kpi").innerHTML =
     `<div><b>${fmt(T.gf_allow)}</b><span>m² allowed by the plan</span></div>
@@ -169,25 +194,25 @@ function bar(label, v, max, col) {
   return `<div class="bar"><div class="l"><span>${label}</span><b>${fmt(v)} m²</b></div><div class="t"><i style="width:${Math.min(100, 100 * v / Math.max(1, max))}%;background:${col}"></i></div></div>`;
 }
 function why(p) {
-  if (p.gf_ex >= p.gf_allow) return "Already built beyond what the plan allows: no new rights here.";
-  if (p.theo < 1) return "The plan's rights are used up.";
+  if (p.gf_ex >= p.gf_allow) return "Already bigger than the plan allows today, so nothing can be added.";
+  if (p.theo < 1) return "The plan's allowance is used up.";
   const v = p[sc];
-  if (v < 1) return sc === "s1" ? "No roof here that can take another storey within the limit." : sc === "s2" ? "Nothing on the roofs, and no usable gap along the street." : "Rights left on paper, but no usable free ground and no roof that can take another storey.";
+  if (v < 1) return sc === "s1" ? "No building here can get another floor within the plan's height limit." : sc === "s2" ? "No roof can grow and there is no usable gap along the street." : "Room is left on paper, but no usable free ground and no roof that can grow.";
   const roof = sc === "s1" ? p.up1 : p.up, ground = sc === "s2" ? p.new2 : sc === "s3" ? p.new3 : 0;
   if (roof > 0 && ground > 0) return sc === "s3" ? "Rooftops plus a new building on free ground, including the yard." : "Rooftops plus a new building in a street gap.";
-  if (roof > 0) return "Only on the roofs.";
+  if (roof > 0) return "Only by building on the roofs.";
   return sc === "s3" ? "A new building on free ground (the yard)." : "A new building in a gap along the street.";
 }
 function detail(p) {
   const max = Math.max(p.gf_allow, p.gf_ex), addKey = sc === "s1" ? "add1" : "add";
-  return `<div class="tags">${p.use === "WA" ? "Residential (WA)" : "Commercial (GE)"} · GRZ ${p.grz}${p.gfz ? " · GFZ " + p.gfz : ""} · max ${ROM[p.st_max]} storeys · ${fmt(p.area)} m²${p.denkmal ? " · listed building" : ""}</div>
+  return `<div class="tags">${p.use === "WA" ? '<abbr title="Allgemeines Wohngebiet: residential zone">Residential (WA)</abbr>' : '<abbr title="Gewerbegebiet: commercial zone, homes not allowed">Commercial (GE)</abbr>'} · <abbr title="Grundflächenzahl: share of the parcel buildings may cover">GRZ ${p.grz}</abbr>${p.gfz ? ` · <abbr title="Geschossflächenzahl: floor area allowed per m² of parcel">GFZ ${p.gfz}</abbr>` : ""} · max ${ROM[p.st_max]} floors · ${fmt(p.area)} m²${p.denkmal ? " · listed building" : ""}</div>
     ${bar("Allowed by the plan", p.gf_allow, max, "#8a929c")}
     ${bar("Built today", p.gf_ex, max, C.ex)}
-    ${bar("Still free on paper", p.theo, max, C.paper)}
+    ${bar("Still free under the plan", p.theo, max, C.paper)}
     <div class="sct">${["s1", "s2", "s3"].map(k => `<span class="${k === sc ? "on" : ""}"><em>${SC[k].short}</em><b>+${fmt(p[k])}</b></span>`).join("")}</div>
     <p class="why">${why(p)}${(() => { const q = people(p, p[sc]); if (p[sc] < 1) return "";
       return housing(p) ? ` <b>≈ ${q.f} flat${q.f === 1 ? "" : "s"} · ≈ ${fmt(q.r)} residents</b>${p.use === "GE" ? " (only if this were MU)" : ""}.` : ` <b>Commercial space, no homes allowed (GE):</b> ≈ ${fmt(q.j)} workplaces if offices.`; })()}</p>
-    ${p.buildings.length ? `<ul class="blist"><li class="h"><span>Buildings today</span><b>storeys now → limit</b></li>${p.buildings.map(b => `<li><span>${b.addr || "Building"} · ${fmt(b.fp)} m²${b.listed ? " · listed" : ""}</span><b>${ROM[b.st] || b.st} → ${ROM[b.lim] || b.lim}${b[addKey] ? ` <em>+${b[addKey]}${housing(p) && flats(b.fp * b[addKey]) ? ` · ${flats(b.fp * b[addKey])} flat${flats(b.fp * b[addKey]) > 1 ? "s" : ""}` : ""}</em>` : ""}</b></li>`).join("")}</ul>` : `<p class="fine">No building on this parcel today.</p>`}
+    ${p.buildings.length ? `<ul class="blist"><li class="h"><span>Buildings today</span><b>floors now → allowed</b></li>${p.buildings.map(b => `<li><span>${b.addr || "Building"} · ${fmt(b.fp)} m²${b.listed ? " · listed" : ""}</span><b>${ROM[b.st] || b.st} → ${ROM[b.lim] || b.lim}${b[addKey] ? ` <em>+${b[addKey]}${housing(p) && flats(b.fp * b[addKey]) ? ` · ${flats(b.fp * b[addKey])} flat${flats(b.fp * b[addKey]) > 1 ? "s" : ""}` : ""}</em>` : ""}</b></li>`).join("")}</ul>` : `<p class="fine">No building on this parcel today.</p>`}
     <div class="nav"><button data-d="-1">← previous</button><button data-d="0">close ✕</button><button data-d="1">next →</button></div>`;
 }
 function order() {
@@ -199,7 +224,7 @@ function list() {
   document.getElementById("plist").innerHTML = ps.map(p => `<li data-i="${p.i}" class="${sel === p.i ? "open" : ""}">
     <div class="row"><b class="n">${p.label}</b><span class="u ${p.use}">${p.use}</span>
       <span class="mini"><i class="t" style="width:${100 * p.theo / mx}%"></i><i class="f" style="width:${100 * p[sc] / mx}%"></i></span>
-      <b class="v">+${fmt(p[sc])}</b><span class="ch">${sel === p.i ? "▾" : "▸"}</span></div>
+      <b class="v">${(() => { const q = people(p, p[sc]); return housing(p) ? (q.f ? `+${q.f} flat${q.f > 1 ? "s" : ""}` : "–") : (q.j >= 1 ? `+${fmt(q.j)} jobs` : "–"); })()}</b><span class="ch">${sel === p.i ? "▾" : "▸"}</span></div>
     ${sel === p.i ? `<div class="det">${detail(p)}</div>` : ""}</li>`).join("");
   document.querySelectorAll("#plist li .row").forEach(r => r.onclick = () => toggle(+r.parentNode.dataset.i));
   document.querySelectorAll("#plist .nav button").forEach(b => b.onclick = e => {
@@ -252,10 +277,28 @@ function apply(g, ge) {
   markers.forEach((m, k) => m.getElement().classList.toggle("on", !!p && k === p.i));
   document.body.classList.toggle("open", !!p);
 }
+function setMu(v) { mu = v; document.getElementById("mu").checked = v; document.body.classList.toggle("mu", mu); paint(); kpi(); list(); }
+// guided tour: three steps, same story as the video
+let tstep = -1;
+function tour(k) {
+  const box = document.getElementById("tourbox"), P = D.P.parcels, byL = l => P.findIndex(p => p.label === l);
+  if (k < 0 || k > 2) { tstep = -1; box.hidden = true; if (sel != null) toggle(sel); setMu(false); return; }
+  tstep = k; box.hidden = false; if (sc !== "s2") setSc("s2");
+  const a = totals("s2", false), m = totals("s2", true);
+  const p562 = P[byL("562")], p5763 = P[byL("5763")];
+  const steps = [
+    () => { setMu(false); if (sel != null) toggle(sel); return `This is <b>one ordinary Hamburg block</b>: 26 parcels between Dehnhaide and Stückenstraße. <b style="color:#2a9d8f">Green</b> parcels could take new flats, <b style="color:#b8741d">amber</b> ones new workplaces. The darker, the more.`; },
+    () => { setMu(false); toggle(byL("562"), true); const q = people(p562, p562.s2); return `<b>Langenrehm 12</b> has 3 floors; the plan allows 4. One more floor on top (<b style="color:#3d7fc1">blue</b>) gives <b>≈ ${q.f} flats for ≈ ${fmt(q.r)} people</b>. The dashed red frame is everything the plan allows on this parcel.`; },
+    () => { setMu(true); toggle(byL("5763"), true); const q = people(p5763, p5763.s2); return `Most of the block is a <b>commercial zone</b>, where homes are not allowed. If they were (a mixed zone), this parcel alone could hold <b>≈ ${q.f} flats</b>, and the block <b>≈ ${fmt(m.f)} instead of ≈ ${fmt(a.f)}</b>. The plan protects space for business. Worth it? That's the real question.`; }
+  ];
+  document.getElementById("tstep").textContent = `Tour · ${k + 1} / 3`;
+  document.getElementById("ttext").innerHTML = steps[k]();
+  document.getElementById("tback").disabled = k === 0; document.getElementById("tnext").textContent = k === 2 ? "explore ✓" : "next →";
+}
 function view(v) {
   document.querySelectorAll("#views button[data-v]").forEach(b => b.classList.toggle("on", b.dataset.v === v));
   const base = sel == null ? { center: HOME.center, zoom: HOME.zoom } : { center: D.P.parcels[sel].c, zoom: map.getZoom() };
   map.easeTo({ ...base, pitch: v === "top" ? 0 : 55, bearing: HOME.bearing, duration: 1000 });
 }
 function orbit() { if (!spinning) return; map.rotateTo(map.getBearing() + 25, { duration: 4000, easing: t => t }); map.once("moveend", orbit); }
-window.APP = { toggle, map: () => map, show, apply, data: () => D, setSc, select: i => { sel = i; apply(); list(); }, grow: (g, ge) => apply(g, ge) };
+window.APP = { tour, setMu, toggle, map: () => map, show, apply, data: () => D, setSc, select: i => { sel = i; apply(); list(); }, grow: (g, ge) => apply(g, ge) };

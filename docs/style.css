@@ -82,3 +82,20 @@ label.mu { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; 
 label.mu input { accent-color: #c0782a; margin-top: 2px; } body.mu label.mu { background: #fdf0de; border-color: #e2b878; color: var(--ink); }
 #kpi .pp, #kpi .jj { grid-column: 1 / -1; } #kpi .pp b, #kpi .jj b { font-size: 15px; } #kpi .pp { background: #eef6f4; } #kpi .jj { background: #f4f2ee; }
 .why b { font-weight: 600; }
+/* v9: layered panel, answer first, tour */
+.ctx { font-size: 12.5px; color: var(--ink2); margin: 0 0 10px; } abbr { text-decoration: underline dotted; cursor: help; }
+#answer { font: 600 17px/1.35 Inter; letter-spacing: -.01em; margin: 6px 0 10px; } #answer em { font-style: normal; color: var(--feas); } #answer i { font-style: normal; color: #b8741d; } #answer u { text-decoration: none; color: #c0782a; }
+#big { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+#big div { border-radius: 10px; padding: 10px 10px 8px; background: var(--bg); } #big b { display: block; font: 800 24px Inter; letter-spacing: -.02em; } #big span { font-size: 11px; color: var(--ink2); line-height: 1.25; display: block; }
+#big .h b { color: var(--feas); } #big .j b { color: #b8741d; } #big .m { background: #fdf3e4; } #big .m b { color: #c0782a; }
+.tourbtn { width: 100%; border: 0; background: var(--ink); color: #fff; font: 600 13.5px Inter; padding: 10px; border-radius: 10px; cursor: pointer; margin: 4px 0 6px; } .tourbtn:hover { background: #33393f; }
+#legend .ramps { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+#legend .ramp.h i { background: linear-gradient(90deg, #f1ede6, #cfe8e2, #6fbdaf, #1f7a6f); } #legend .ramp.j i { background: linear-gradient(90deg, #f1ede6, #f6dfb8, #e3a857, #b8741d); }
+body.mu #legend .ramp.j { opacity: .3; }
+details.pro { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin: 10px 0; } details.pro #kpi { margin-top: 10px; }
+.gloss { display: grid; grid-template-columns: 70px 1fr; gap: 4px 8px; font-size: 12px; color: var(--ink2); margin: 10px 0 2px; } .gloss dt { font: 600 11.5px var(--mono); color: var(--ink); } .gloss dd { margin: 0; }
+#tourbox { position: absolute; left: 16px; bottom: 40px; width: min(400px, calc(100% - 462px)); min-width: 280px; z-index: 8; background: #fff; border-radius: 14px; padding: 14px 16px 12px; box-shadow: 0 12px 40px rgba(30,25,20,.22); font-size: 14px; line-height: 1.45; }
+#tourbox .tstep { font: 600 11px var(--mono); color: var(--ink3); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+#tourbox b { font-weight: 700; } .tnav { display: flex; gap: 6px; margin-top: 10px; } .tnav button { flex: 1; border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 7px; font: 500 12.5px Inter; cursor: pointer; color: var(--ink2); } .tnav .pri { background: var(--feas); border-color: var(--feas); color: #fff; font-weight: 600; }
+@media (max-width: 860px) { #tourbox { left: 8px; right: 8px; width: auto; bottom: calc(52vh + 8px); min-width: 0; } #big b { font-size: 20px; } }
+@media (max-width: 860px) { #tourbox { font-size: 12.5px; padding: 10px 12px; } .tnav button { padding: 5px; } }
