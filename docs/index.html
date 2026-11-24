@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Urban Potential Explorer</title>
+<meta name="description" content="#30DayMapChallenge 2026 · Day 27 · New Tool. Hamburg, B-Plan Barmbek-Süd 42: how much more could be built on each parcel, on paper and in practice?">
+<meta property="og:title" content="Urban Potential Explorer · Barmbek-Süd 42">
+<meta property="og:description" content="One Hamburg block, every parcel: what the plan allows, what stands today, and what could realistically be added.">
+<meta property="og:image" content="https://barisparlatangiller.github.io/30DMC26-D27-NewTool-Hamburg-Urban-Potential/og.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<link href="style.css?v=1" rel="stylesheet">
+</head>
+<body>
+<div id="map"></div>
+<div id="views"><button data-v="persp" class="on">3D</button><button data-v="top">Plan</button><button id="spin" title="Orbit">⟳</button></div>
+<aside id="panel">
+  <div class="eb">#30DayMapChallenge · Day 27 · New Tool · Hamburg</div>
+  <h1>Urban Potential Explorer</h1>
+  <p class="sub">Bebauungsplan <b>Barmbek-Süd 42</b> (2019): one block between Dehnhaide and Stückenstraße. For every parcel: what the plan allows, what stands today, and what could realistically be added.</p>
+  <div class="seg" id="modes"><button data-m="theo" class="on">Theoretical</button><button data-m="feas">Feasible</button></div>
+  <p class="fine" id="modenote"></p>
+  <div id="kpi"></div>
+  <div id="legend"></div>
+  <div id="card"><p class="hint">Click a parcel to see its numbers.</p></div>
+  <details>
+    <summary>Method and limits</summary>
+    <div class="fine">
+      <p><b>Plan.</b> The plan sheet (Bezirksamt Hamburg-Nord, 2019) was fitted to the ALKIS parcels (accuracy ≈ 1 m) and the zones (WA/GE with GRZ, GFZ), building limits (Baugrenzen) and storey limits were digitised from it. The XPlanGML service had no geometry for this plan.</p>
+      <p><b>Existing.</b> LoD2 building models (LGV Hamburg): footprint × storeys (from the model, otherwise eave height ÷ 3 m).</p>
+      <p><b>Theoretical</b> = what the numbers allow minus what exists: floor area GFZ × parcel, or, without a GFZ, GRZ × parcel × storey limit.</p>
+      <p><b>Feasible</b> keeps today's buildings standing: new building only on unbuilt ground inside the building limits (3 m clear of existing buildings, at least 8 m wide and 120 m²) and within the GRZ still free; rooftop extensions up to the storey limit but at most +2 storeys, one fewer on pitched roofs (the attic already counts), none on buildings under 60 m²; the listed building stays as it is.</p>
+      <p>Homes ≈ gross floor area ÷ 90 m², residential zones only. GRZ overruns for parking (§19(4) BauNVO), noise rules, distances, ownership and economics are left out.</p>
+      <p>⚠️ A scenario on the published plan, not a planning or legal assessment.</p>
+      <p>Data: Freie und Hansestadt Hamburg, LGV / Bezirksamt Hamburg-Nord, Datenlizenz Deutschland – Namensnennung 2.0 (ALKIS parcels, LoD2, B-Plan). Base map © OpenStreetMap contributors, © CARTO.</p>
+      <p><a href="https://github.com/barisparlatangiller/30DMC26-D27-NewTool-Hamburg-Urban-Potential">Code and pipeline on GitHub</a> · Barış Parlatangiller</p>
+    </div>
+  </details>
+</aside>
+<div id="tip"></div>
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="app.js?v=1"></script>
+</body>
+</html>

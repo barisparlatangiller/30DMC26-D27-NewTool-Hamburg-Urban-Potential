@@ -1,0 +1,37 @@
+:root { --ink: #1f2328; --ink2: #5b6470; --ink3: #8a929c; --line: #e6e2da; --bg: #f7f5f1; --card: #fff; --mono: "JetBrains Mono", ui-monospace, monospace;
+  --theo: #e07a5f; --feas: #2a9d8f; --ex: #b9b2a6; --wa: #e9a1a0; --ge: #a59d95; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 14px/1.5 Inter, system-ui, sans-serif; }
+a { color: #2e6f8c; }
+#map { position: absolute; inset: 0 430px 0 0; }
+#panel { position: absolute; top: 0; right: 0; bottom: 0; width: 430px; overflow-y: auto; background: var(--card); border-left: 1px solid var(--line); padding: 22px 22px 14px; }
+.eb { font: 500 11px var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--ink3); }
+h1 { font: 800 26px/1.1 Inter; letter-spacing: -.02em; margin: 8px 0 6px; }
+.sub { color: var(--ink2); margin: 0 0 14px; }
+h3 { font: 600 11.5px Inter; letter-spacing: .06em; text-transform: uppercase; color: var(--ink3); margin: 16px 0 8px; }
+.seg { display: flex; background: #efebe4; border-radius: 10px; padding: 3px; gap: 2px; }
+.seg button { flex: 1; border: 0; background: none; padding: 9px 6px; border-radius: 8px; font: 600 13px Inter; color: var(--ink2); cursor: pointer; transition: all .2s; }
+.seg button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.seg button[data-m=theo].on { color: var(--theo); } .seg button[data-m=feas].on { color: var(--feas); }
+#modenote { min-height: 36px; margin: 8px 0 4px; }
+#kpi { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin: 6px 0 8px; }
+#kpi div { background: var(--bg); border-radius: 10px; padding: 9px 9px 7px; }
+#kpi b { display: block; font: 700 19px Inter; letter-spacing: -.01em; } #kpi span { font-size: 11px; color: var(--ink2); line-height: 1.25; display: block; }
+#kpi .t b { color: var(--theo); } #kpi .f b { color: var(--feas); }
+#legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 10px 0 4px; font-size: 12px; color: var(--ink2); }
+#legend i { display: inline-block; width: 13px; height: 13px; border-radius: 3px; vertical-align: -2px; margin-right: 5px; }
+#card { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 12px 0; min-height: 90px; }
+#card .hint { color: var(--ink3); margin: 22px 0; text-align: center; }
+#card h2 { font: 700 17px Inter; margin: 0 0 2px; } #card .tags { font: 500 11.5px var(--mono); color: var(--ink2); margin-bottom: 10px; }
+.bar { margin: 7px 0; } .bar .l { display: flex; justify-content: space-between; font-size: 12.5px; } .bar .l b { font-family: var(--mono); font-weight: 600; }
+.bar .t { height: 8px; background: #f0ece6; border-radius: 4px; overflow: hidden; margin-top: 3px; } .bar .t i { display: block; height: 100%; border-radius: 4px; }
+.blist { margin: 10px 0 0; padding: 0; list-style: none; font-size: 12px; color: var(--ink2); } .blist li { padding: 4px 0; border-top: 1px dashed var(--line); display: flex; justify-content: space-between; gap: 8px; }
+.blist li b { font-family: var(--mono); color: var(--ink); font-weight: 600; }
+details { margin: 10px 0; } summary { cursor: pointer; font-weight: 600; font-size: 13px; }
+.fine { font-size: 12px; color: var(--ink2); } .fine p { margin: 6px 0; }
+#views { position: absolute; left: 16px; top: 16px; z-index: 3; display: flex; gap: 2px; background: rgba(255,255,255,.95); border: 1px solid var(--line); border-radius: 10px; padding: 3px; box-shadow: 0 4px 16px rgba(40,30,20,.08); }
+#views button { border: 0; background: none; padding: 6px 11px; border-radius: 7px; font: 600 12px var(--mono); color: var(--ink2); cursor: pointer; }
+#views button.on { background: var(--ink); color: #fff; }
+#tip { position: absolute; pointer-events: none; z-index: 6; background: rgba(31,35,40,.93); color: #fff; font-size: 12px; padding: 6px 9px; border-radius: 7px; display: none; max-width: 240px; }
+body.film #panel, body.film #views, body.film .maplibregl-ctrl { display: none !important; } body.film #map { inset: 0; }
+@media (max-width: 860px) { #map { inset: 0 0 52vh 0; } #panel { top: 48vh; width: auto; left: 0; border-left: 0; border-top: 1px solid var(--line); padding: 16px; border-radius: 16px 16px 0 0; } h1 { font-size: 22px; } }
