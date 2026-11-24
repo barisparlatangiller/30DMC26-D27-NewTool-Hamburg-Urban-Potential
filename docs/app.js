@@ -68,15 +68,19 @@ function init() {
   const lbl = map.getStyle().layers.find(l => l.type === "symbol")?.id;
   const DOP = "https://geodienste.hamburg.de/HH_WMS_DOP?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&FORMAT=image/jpeg&LAYERS=DOP&STYLES=&CRS=EPSG:3857&WIDTH=256&HEIGHT=256&BBOX={bbox-epsg-3857}";
   const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+  const under = map.getStyle().layers.find(l => l.type !== "background")?.id;      // photo + mask sit right above the base map's background
   map.addSource("photo", { type: "raster", tiles: [DOP], tileSize: 256, maxzoom: 20, attribution: "Orthophoto © FHH, LGV (dl-de/by-2-0)" });
-  map.addLayer({ id: "photo", type: "raster", source: "photo", layout: { visibility: show.photo ? "visible" : "none" }, paint: { "raster-opacity": 0.92, "raster-saturation": -0.25, "raster-contrast": -0.05 } }, lbl);
+  map.addLayer({ id: "photo", type: "raster", source: "photo", layout: { visibility: show.photo ? "visible" : "none" }, paint: { "raster-opacity": 0.92, "raster-saturation": -0.25, "raster-contrast": -0.05 } }, under);
   let fellBack = false;
   map.on("error", e => {
     if (fellBack || e.sourceId !== "photo") return; fellBack = true;
     map.removeLayer("photo"); map.removeSource("photo");
     map.addSource("photo", { type: "raster", tiles: [ESRI], tileSize: 256, maxzoom: 19, attribution: "Imagery © Esri, Maxar, Earthstar Geographics" });
-    map.addLayer({ id: "photo", type: "raster", source: "photo", layout: { visibility: show.photo ? "visible" : "none" }, paint: { "raster-opacity": 0.92, "raster-saturation": -0.25 } }, "parks");
+    map.addLayer({ id: "photo", type: "raster", source: "photo", layout: { visibility: show.photo ? "visible" : "none" }, paint: { "raster-opacity": 0.92, "raster-saturation": -0.25 } }, "mask");
   });
+  map.addSource("mask", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+  const bgc = map.getStyle().layers.find(l => l.type === "background")?.paint?.["background-color"] || "#f3f0ea";
+  map.addLayer({ id: "mask", type: "fill", source: "mask", paint: { "fill-color": bgc, "fill-opacity": 1 } }, under);
   map.addLayer({ id: "parks", type: "fill", source: "parks", paint: { "fill-color": "#d6e6c8", "fill-opacity": 0.9 } }, lbl);
   map.addLayer({ id: "roads", type: "line", source: "roads", layout: { "line-cap": "round", "line-join": "round" },
     paint: { "line-color": "#ffffff", "line-width": ["interpolate", ["exponential", 2], ["zoom"], 15, 4, 19, 40] } }, lbl);
@@ -90,9 +94,9 @@ function init() {
   map.addLayer({ id: "trees", type: "fill-extrusion", source: "trees", paint: {
     "fill-extrusion-color": ["case", ["==", ["get", "k"], "t"], "#8a6f55", ["interpolate", ["linear"], ["get", "s"], 0, "#a3c890", 0.5, "#86b676", 1, "#6ca263"]],
     "fill-extrusion-base": ["get", "b"], "fill-extrusion-height": ["get", "h"], "fill-extrusion-opacity": 0.9 } });
-  D.l2ids = new Set(D.L2.map(b => b.id));
+  D.l2ids = new Set(D.L2.filter(b => inPlan.has(b.id)).map(b => b.id));
   D.surf = [];
-  for (const b of D.L2) {
+  for (const b of D.L2.filter(b => inPlan.has(b.id))) {
     for (const r of b.r) { const zs = r.map(c => c[2]); D.surf.push({ id: b.id, k: Math.max(...zs) - Math.min(...zs) > 0.6 ? "rp" : "rf", p: r }); }
     for (const w of b.w) D.surf.push({ id: b.id, k: "w", p: w });
   }
@@ -232,7 +236,9 @@ function apply(g, ge) {
   D.P.parcels.forEach(q => map.setFeatureState({ source: "parcels", id: q.i }, { dim: !!p && q.i !== p.i }));
   map.setPaintProperty("bld", "fill-extrusion-opacity", p ? 0.32 : 0.5);
   map.setPaintProperty("pfill", "fill-opacity", ["case", ["boolean", ["feature-state", "dim"], false], show.photo ? 0.1 : 0.3, show.photo ? 0.72 : 0.92]);
-  if (map.getLayer("photo")) map.setLayoutProperty("photo", "visibility", show.photo ? "visible" : "none"); map.setPaintProperty("trees", "fill-extrusion-opacity", p ? 0.45 : 0.9);
+  if (map.getLayer("photo")) map.setLayoutProperty("photo", "visibility", show.photo ? "visible" : "none");
+  const hole = p ? polys(p.geom) : D.P.parcels.flatMap(q => polys(q.geom));
+  map.getSource("mask").setData({ type: "Feature", geometry: { type: "Polygon", coordinates: [[[9.9, 53.5], [10.2, 53.5], [10.2, 53.65], [9.9, 53.65], [9.9, 53.5]], ...hole.map(r => r[0])] } }); map.setPaintProperty("trees", "fill-extrusion-opacity", p ? 0.45 : 0.9);
   markers.forEach((m, k) => m.getElement().classList.toggle("on", !!p && k === p.i));
   document.body.classList.toggle("open", !!p);
 }
