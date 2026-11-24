@@ -11,13 +11,13 @@ const SC = {
 let HOME = { center: [10.0468, 53.5799], zoom: 17.2, pitch: 50, bearing: 10 };
 const fmt = n => Math.round(n).toLocaleString("en-US");
 const ROM = ["–", "I", "II", "III", "IV", "V", "VI"];
-let D, sel = null, sc = "s2", show = { env: true, add: true }, spinning = false, markers = [], overlay;
+let lighting, D, sel = null, sc = "s2", show = { env: true, add: true, photo: true }, spinning = false, markers = [], overlay;
 const map = new maplibregl.Map({ container: "map", style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json", ...HOME, antialias: true, attributionControl: { compact: true } });
 map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-left");
 const FILES = ["potential.json", "web_buildings.geojson", "web_env.geojson", "web_context.geojson", "web_trees.geojson", "web_parks.geojson", "web_roads.geojson",
-  "web_auf1.geojson", "web_auf2.geojson", "web_new2.geojson", "web_new3.geojson"];
+  "web_auf1.geojson", "web_auf2.geojson", "web_new2.geojson", "web_new3.geojson", "web_lod2.json"];
 Promise.all(FILES.map(f => fetch("data/" + f).then(r => r.json())))
-  .then(([P, B, E, X, TR, PK, RD, A1, A2, N2, N3]) => { D = { P, B, E, X, TR, PK, RD, A1, A2, N2, N3 }; map.loaded() ? init() : map.on("load", init); });
+  .then(([P, B, E, X, TR, PK, RD, A1, A2, N2, N3, L2]) => { D = { P, B, E, X, TR, PK, RD, A1, A2, N2, N3, L2 }; map.loaded() ? init() : map.on("load", init); });
 
 function bbox(g) {
   let x0 = 180, y0 = 90, x1 = -180, y1 = -90;
@@ -66,6 +66,17 @@ function init() {
   map.setLight({ anchor: "map", color: "#ffffff", intensity: 0.22, position: [1.2, 210, 35] });
   ["ctx", "parcels", "bld", "trees", "parks", "roads"].forEach((id, k) => map.addSource(id, { type: "geojson", data: [D.X, parcels, D.B, D.TR, D.PK, D.RD][k] }));
   const lbl = map.getStyle().layers.find(l => l.type === "symbol")?.id;
+  const DOP = "https://geodienste.hamburg.de/HH_WMS_DOP?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&FORMAT=image/jpeg&LAYERS=DOP&STYLES=&CRS=EPSG:3857&WIDTH=256&HEIGHT=256&BBOX={bbox-epsg-3857}";
+  const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+  map.addSource("photo", { type: "raster", tiles: [DOP], tileSize: 256, maxzoom: 20, attribution: "Orthophoto © FHH, LGV (dl-de/by-2-0)" });
+  map.addLayer({ id: "photo", type: "raster", source: "photo", layout: { visibility: show.photo ? "visible" : "none" }, paint: { "raster-opacity": 0.92, "raster-saturation": -0.25, "raster-contrast": -0.05 } }, lbl);
+  let fellBack = false;
+  map.on("error", e => {
+    if (fellBack || e.sourceId !== "photo") return; fellBack = true;
+    map.removeLayer("photo"); map.removeSource("photo");
+    map.addSource("photo", { type: "raster", tiles: [ESRI], tileSize: 256, maxzoom: 19, attribution: "Imagery © Esri, Maxar, Earthstar Geographics" });
+    map.addLayer({ id: "photo", type: "raster", source: "photo", layout: { visibility: show.photo ? "visible" : "none" }, paint: { "raster-opacity": 0.92, "raster-saturation": -0.25 } }, "parks");
+  });
   map.addLayer({ id: "parks", type: "fill", source: "parks", paint: { "fill-color": "#d6e6c8", "fill-opacity": 0.9 } }, lbl);
   map.addLayer({ id: "roads", type: "line", source: "roads", layout: { "line-cap": "round", "line-join": "round" },
     paint: { "line-color": "#ffffff", "line-width": ["interpolate", ["exponential", 2], ["zoom"], 15, 4, 19, 40] } }, lbl);
@@ -79,7 +90,15 @@ function init() {
   map.addLayer({ id: "trees", type: "fill-extrusion", source: "trees", paint: {
     "fill-extrusion-color": ["case", ["==", ["get", "k"], "t"], "#8a6f55", ["interpolate", ["linear"], ["get", "s"], 0, "#a3c890", 0.5, "#86b676", 1, "#6ca263"]],
     "fill-extrusion-base": ["get", "b"], "fill-extrusion-height": ["get", "h"], "fill-extrusion-opacity": 0.9 } });
-  overlay = new deck.MapboxOverlay({ interleaved: true, layers: [] }); map.addControl(overlay);
+  D.l2ids = new Set(D.L2.map(b => b.id));
+  D.surf = [];
+  for (const b of D.L2) {
+    for (const r of b.r) { const zs = r.map(c => c[2]); D.surf.push({ id: b.id, k: Math.max(...zs) - Math.min(...zs) > 0.6 ? "rp" : "rf", p: r }); }
+    for (const w of b.w) D.surf.push({ id: b.id, k: "w", p: w });
+  }
+  lighting = new deck.LightingEffect({ amb: new deck.AmbientLight({ color: [255, 255, 255], intensity: 1.35 }),
+    sun: new deck.DirectionalLight({ color: [255, 250, 240], intensity: 1.1, direction: [-0.55, -0.8, -1.4] }) });   // fixed in the world, not to the camera
+  overlay = new deck.MapboxOverlay({ interleaved: true, layers: [], effects: [lighting] }); map.addControl(overlay);
   [["Dehnhaide", [10.0462, 53.57905]], ["Stückenstraße", [10.0466, 53.57995]], ["Langenrehm", [10.04435, 53.5797]], ["Friedrichsberger Str.", [10.04955, 53.5794]]]
     .forEach(([t, ll]) => { const el = document.createElement("div"); el.className = "street"; el.textContent = t; new maplibregl.Marker({ element: el }).setLngLat(ll).addTo(map); });
   ps.forEach(p => {
@@ -183,31 +202,37 @@ function toggle(i, force) {
   map.fitBounds(p.bb, { padding: { top: 120, bottom: 120, left: 120, right: 120 }, maxZoom: 18.6, pitch: 55, bearing: map.getBearing(), duration: 1100 });
 }
 // deck.gl volumes for the open parcel; g = growth 0..1 (used by the film)
+const COL = { w: [214, 206, 196], rp: [178, 138, 122], rf: [160, 164, 168], sw: [176, 186, 198], srp: [120, 128, 138], srf: [140, 146, 152] };
 function deckLayers(p, g = 1, ge = 1) {
-  if (!p) return [];
-  const L = p.label, of = fc => fc.features.filter(f => f.properties.parcel === L);
-  const ex = vols(D.B.features.filter(f => p.ids.has(f.properties.id)), () => 0, q => q.h);
-  const env = show.env ? vols(of(D.E), () => 0, q => q.h * ge) : [];
-  const auf = show.add && sc !== "s3x" ? vols(of(sc === "s1" ? D.A1 : D.A2), q => q.base, q => q.base + (q.top - q.base) * g) : [];
-  const nb = show.add && sc !== "s1" ? vols(of(sc === "s2" ? D.N2 : D.N3), () => 0, q => q.h * g) : [];
+  const L = p && p.label, of = fc => fc.features.filter(f => f.properties.parcel === L);
+  const auf = p && show.add ? vols(of(sc === "s1" ? D.A1 : D.A2), q => q.base, q => q.base + (q.top - q.base) * g) : [];
+  const lifted = new Set(p && show.add ? of(sc === "s1" ? D.A1 : D.A2).map(f => f.properties.id) : []);
+  const nb = p && show.add && sc !== "s1" ? vols(of(sc === "s2" ? D.N2 : D.N3), () => 0, q => q.h * g) : [];
+  const env = p && show.env ? vols(of(D.E), () => 0, q => q.h * ge) : [];
+  const dim = !!p;
+  const surfaces = new deck.SolidPolygonLayer({ id: "lod2", data: D.surf, _full3d: true, extruded: false, getPolygon: d => d.p,
+    getFillColor: d => { const s = p && p.ids.has(d.id); const c = COL[(s ? "s" : "") + d.k] || COL[d.k];
+      const a = s ? (d.k !== "w" && lifted.has(d.id) ? 70 : 255) : (dim ? 150 : 255); return [...c, a]; },
+    material: { ambient: 0.55, diffuse: 0.5, shininess: 8, specularColor: [30, 30, 30] },
+    updateTriggers: { getFillColor: [L, sc, show.add, g > 0.01] }, parameters: { depthTest: true } });
   const solid = (id, data, col, a) => new deck.SolidPolygonLayer({ id, data, extruded: true, material: false, _full3d: true,
     getPolygon: v => v.rings.map(r => r.map(c => [c[0], c[1], v.b])), getElevation: v => Math.max(0.01, v.t - v.b), getFillColor: rgb(col, a), parameters: { depthTest: true } });
   const lines = (id, data, col, w, dash) => new deck.PathLayer({ id, data: data.flatMap(edges), getPath: d => d, getColor: rgb(col), getWidth: w, widthUnits: "pixels",
     capRounded: true, jointRounded: true, ...(dash ? { getDashArray: [5, 4], dashJustified: true, extensions: [new deck.PathStyleExtension({ dash: true })] } : {}), parameters: { depthTest: true } });
-  return [
-    solid("ex", ex, C.ex, 255), lines("exE", ex, C.exEdge, 1.2),
+  return [surfaces,
     solid("nb", nb, C.s, 235), lines("nbE", nb, "#155e55", 1.6),
     solid("auf", auf, C.roof, 235), lines("aufE", auf, "#1e4f7f", 1.6),
-    solid("env", env, C.paper, 22), lines("envE", env, C.envEdge, 1.8, true)
-  ];
+    solid("env", env, C.paper, 22), lines("envE", env, C.envEdge, 1.8, true)];
 }
 function apply(g, ge) {
   const p = sel == null ? null : D.P.parcels[sel];
   overlay.setProps({ layers: deckLayers(p, g, ge) });
-  map.setFilter("bld", p ? ["!", ["in", ["get", "id"], ["literal", [...p.ids]]]] : null);
+  map.setFilter("bld", ["!", ["in", ["get", "id"], ["literal", [...D.l2ids]]]]);
   map.setFilter("psel", ["==", ["get", "i"], p ? p.i : -1]);
   D.P.parcels.forEach(q => map.setFeatureState({ source: "parcels", id: q.i }, { dim: !!p && q.i !== p.i }));
-  map.setPaintProperty("bld", "fill-extrusion-opacity", p ? 0.32 : 0.5); map.setPaintProperty("trees", "fill-extrusion-opacity", p ? 0.45 : 0.9);
+  map.setPaintProperty("bld", "fill-extrusion-opacity", p ? 0.32 : 0.5);
+  map.setPaintProperty("pfill", "fill-opacity", ["case", ["boolean", ["feature-state", "dim"], false], show.photo ? 0.1 : 0.3, show.photo ? 0.72 : 0.92]);
+  if (map.getLayer("photo")) map.setLayoutProperty("photo", "visibility", show.photo ? "visible" : "none"); map.setPaintProperty("trees", "fill-extrusion-opacity", p ? 0.45 : 0.9);
   markers.forEach((m, k) => m.getElement().classList.toggle("on", !!p && k === p.i));
   document.body.classList.toggle("open", !!p);
 }

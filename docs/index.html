@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
-<link href="style.css?v=5" rel="stylesheet">
+<link href="style.css?v=6" rel="stylesheet">
 </head>
 <body>
 <div id="map"></div>
@@ -28,13 +28,13 @@
   <div id="legend">
     <div class="ramp"><span>Addition per m² of parcel, in the chosen scenario</span><i></i><em><b>none</b><b>high</b></em></div>
     <div class="keys">
-      <span><i class="sw" style="background:#b9bec4;border-color:#5f6670"></i>Building today</span>
+      <span><i class="sw" style="background:#c4cad1;border-color:#78808a"></i>Building today (open parcel)</span>
       <span><i class="sw wire"></i>Plan envelope (what the plan allows)</span>
       <span><i class="sw" style="background:#3d7fc1;border-color:#1e4f7f"></i>Rooftop storey</span>
       <span><i class="sw" style="background:#2a9d8f;border-color:#155e55"></i>New building</span>
     </div>
   </div>
-  <div id="show"><label><input type="checkbox" name="env" checked> Plan envelope</label><label><input type="checkbox" name="add" checked> Additions</label></div>
+  <div id="show"><label><input type="checkbox" name="env" checked> Plan envelope</label><label><input type="checkbox" name="add" checked> Additions</label><label><input type="checkbox" name="photo" checked> Aerial photo</label></div>
   <div class="lh"><h3 id="np">parcels</h3><select id="sort"><option value="sc">by scenario m²</option><option value="theo">by m² on paper</option><option value="num">by number</option></select></div>
   <div class="lhead"><span>No.</span><span></span><span class="mk"><i class="t"></i>paper <i class="f"></i>scenario</span><span>m² added</span></div>
   <ul id="plist"></ul>
@@ -48,7 +48,7 @@
       <p><b>Not checked:</b> distances between buildings (Abstandsflächen, HBauO), structure of each roof, how yards are used (delivery, parking), trees on private ground, ownership and economics. Treat the scenarios as a range, not a forecast.</p>
       <p>Homes ≈ gross floor area ÷ 90 m², residential zones only.</p>
       <p>⚠️ A scenario on the published plan, not a planning or legal assessment.</p>
-      <p>Data: Freie und Hansestadt Hamburg, LGV / Bezirksamt Hamburg-Nord / BUKEA, Datenlizenz Deutschland – Namensnennung 2.0 (ALKIS parcels, LoD2, B-Plan, street tree register; trees drawn schematically from their crown size, trees on private ground are not in the register). Parks and main roads: © OpenStreetMap contributors. Base map © OpenStreetMap contributors, © CARTO.</p>
+      <p>Data: Freie und Hansestadt Hamburg, LGV / Bezirksamt Hamburg-Nord / BUKEA, Datenlizenz Deutschland – Namensnennung 2.0 (ALKIS parcels, LoD2, B-Plan, street tree register; trees drawn schematically from their crown size, trees on private ground are not in the register). Parks and main roads: © OpenStreetMap contributors. Aerial photo: FHH LGV orthophoto (dl-de/by-2-0), Esri World Imagery as fallback. Base map © OpenStreetMap contributors, © CARTO.</p>
       <p><a href="https://github.com/barisparlatangiller/30DMC26-D27-NewTool-Hamburg-Urban-Potential">Code and pipeline on GitHub</a> · Barış Parlatangiller</p>
     </div>
   </details>
@@ -56,6 +56,6 @@
 <div id="tip"></div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/deck.gl@9.0.38/dist.min.js"></script>
-<script src="app.js?v=5"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>

@@ -45,7 +45,7 @@ python pipeline/potential.py                                                # pe
   - new ground: inside the Baugrenzen, at least 8 m wide and 120 m², 3 m from existing buildings, within the GRZ still free;
   - no rooftop storeys on buildings under 60 m² or on the listed building.
 - **Not checked:** Abstandsflächen (HBauO), roof structure, yard use (delivery, parking), private trees, ownership, economics.
-- **3D:** additions are drawn unlit (deck.gl, material off) with dark edges, and the plan envelope as a dashed wire frame, so colours stay the same from every angle.
+- **3D:** today's buildings use their real LoD2 roof and wall surfaces (`pipeline/lod2_surfaces.py`), lit by a sun fixed in the world, over the Hamburg aerial photo; additions are drawn unlit (deck.gl, material off) with dark edges, and the plan envelope as a dashed wire frame, so colours stay the same from every angle.
 
 ⚠️ A scenario on the published plan, not a planning or legal assessment.
 

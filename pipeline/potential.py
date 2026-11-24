@@ -105,7 +105,8 @@ for f in FC("build/parcels.geojson"):
         up1 += b["fp"] * b["add1"]; up2 += b["fp"] * b["add"]
         for k, key in ((1, "add1"), (2, "add")):
             if b[key] > 0:
-                AUF[k].append({"type": "Feature", "properties": {"parcel": lab, "base": b["h"], "top": round(b["h"] + b[key] * STOREY_H, 1)},
+                base = b["eave"] if b.get("eave") and b["roof"] not in (None, "1000") else b["h"]     # pitched: the new storey replaces the roof
+                AUF[k].append({"type": "Feature", "properties": {"parcel": lab, "id": b["id"], "base": round(base, 1), "top": round(base + b[key] * STOREY_H, 1)},
                                "geometry": mapping(transform(TF, b["_g"]))})
     def newb(free, k):
         fp = max(0.0, min(free.area if not free.is_empty else 0, fp_left))
