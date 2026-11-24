@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
-<link href="style.css?v=6" rel="stylesheet">
+<link href="style.css?v=8" rel="stylesheet">
 </head>
 <body>
 <div id="map"></div>
@@ -23,6 +23,7 @@
   <h3>Choose a scenario</h3>
   <div id="scen"></div>
   <p class="fine" id="scnote"></p>
+  <label class="mu"><input type="checkbox" id="mu"> <span><b>What if</b> the commercial zone (GE) were an urban mixed zone (MU), where homes are allowed?</span></label>
   <div id="kpi"></div>
   <p class="how"><b>How to use:</b> parcels are coloured by how much the chosen scenario adds. Click a parcel on the map or in the list to open it in 3D; click again to close.</p>
   <div id="legend">
@@ -46,7 +47,7 @@
       <p><b>On paper</b> = what the numbers allow minus what exists: floor area GFZ × parcel, or, without a GFZ, GRZ × parcel × storey limit.</p><p><b>Scenarios</b> keep every building standing and never exceed what is free on paper. <b>One more storey:</b> +1 storey on every building below its limit. <b>Roofs + street gaps:</b> rooftops up to the limit (max +2, one fewer on pitched roofs) and new buildings only in gaps within 16 m of the street; yards stay free. <b>Maximum:</b> also new buildings in the yards.</p>
       <p>Common rules: new buildings only on unbuilt ground inside the building limits, 3 m clear of existing buildings, at least 8 m wide and 120 m², within the GRZ still free; no rooftop storeys on buildings under 60 m² or on the listed building.</p>
       <p><b>Not checked:</b> distances between buildings (Abstandsflächen, HBauO), structure of each roof, how yards are used (delivery, parking), trees on private ground, ownership and economics. Treat the scenarios as a range, not a forecast.</p>
-      <p>Homes ≈ gross floor area ÷ 90 m², residential zones only.</p>
+      <p><b>People.</b> 78% of the gross floor area becomes living space; one flat per 60 m² of it, 1.6 people per flat; a new storey is about 3 m (habitable rooms need 2.40 m clear height, HBauO § 47). Homes only on residential parcels (WA): the commercial zone (GE) does not allow them (BauNVO § 8), so its new space is shown as workplaces, ≈ 32 m² gross each if it were offices. The MU switch shows what the block could hold if homes were allowed there too (an upper bound: MU asks for a mix). HBauO eases rooftop flats: no lift and no barrier-free flats required for up to two added storeys (§ 39, § 50).</p>
       <p>⚠️ A scenario on the published plan, not a planning or legal assessment.</p>
       <p>Data: Freie und Hansestadt Hamburg, LGV / Bezirksamt Hamburg-Nord / BUKEA, Datenlizenz Deutschland – Namensnennung 2.0 (ALKIS parcels, LoD2, B-Plan, street tree register; trees drawn schematically from their crown size, trees on private ground are not in the register). Parks and main roads: © OpenStreetMap contributors. Aerial photo: FHH LGV orthophoto (dl-de/by-2-0), Esri World Imagery as fallback. Base map © OpenStreetMap contributors, © CARTO.</p>
       <p><a href="https://github.com/barisparlatangiller/30DMC26-D27-NewTool-Hamburg-Urban-Potential">Code and pipeline on GitHub</a> · Barış Parlatangiller</p>
@@ -56,6 +57,6 @@
 <div id="tip"></div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/deck.gl@9.0.38/dist.min.js"></script>
-<script src="app.js?v=7"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>

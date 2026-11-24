@@ -10,6 +10,12 @@ const SC = {
 };
 let HOME = { center: [10.0468, 53.5799], zoom: 17.2, pitch: 50, bearing: 10 };
 const fmt = n => Math.round(n).toLocaleString("en-US");
+// people: 78% of gross floor area is living space, 60 m² per flat, 1.6 people per flat; offices ≈ 32 m² gross per workplace
+const NET = 0.78, FLAT = 60, PPF = 1.6, JOB = 32;
+let mu = false;                                   // what if the commercial zone (GE) were an urban mixed zone (MU), where homes are allowed
+const flats = gf => { const l = gf * NET; return l < 40 ? 0 : Math.max(1, Math.floor(l / FLAT)); };
+const housing = p => p.use === "WA" || mu;
+function people(p, v) { return housing(p) ? { f: flats(v), r: flats(v) * PPF, j: 0 } : { f: 0, r: 0, j: v / JOB }; }
 const ROM = ["–", "I", "II", "III", "IV", "V", "VI"];
 let lighting, D, sel = null, sc = "s2", show = { env: true, add: true, photo: true }, spinning = false, markers = [], overlay;
 const map = new maplibregl.Map({ container: "map", style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json", ...HOME, antialias: true, attributionControl: { compact: true } });
@@ -127,6 +133,7 @@ function init() {
   document.querySelectorAll("#show input").forEach(cb => cb.onchange = () => { show[cb.name] = cb.checked; apply(); });
   document.querySelectorAll("#scen button").forEach(b => b.onclick = () => setSc(b.dataset.s));
   document.getElementById("sort").onchange = list;
+  document.getElementById("mu").onchange = e => { mu = e.target.checked; document.body.classList.toggle("mu", mu); kpi(); list(); };
   const all = ps.reduce((b, p) => [[Math.min(b[0][0], p.bb[0][0]), Math.min(b[0][1], p.bb[0][1])], [Math.max(b[1][0], p.bb[1][0]), Math.max(b[1][1], p.bb[1][1])]], [[180, 90], [-180, -90]]);
   const cam = map.cameraForBounds(all, { padding: { top: 70, bottom: 70, left: 50, right: 50 }, bearing: HOME.bearing });
   if (cam) { HOME.center = [cam.center.lng, cam.center.lat]; HOME.zoom = cam.zoom - 0.15; }
@@ -149,12 +156,14 @@ function setSc(k) {
   kpi(); list(); apply();
 }
 function kpi() {
-  const T = D.P.totals, h = T.homes[sc];
+  const T = D.P.totals, tot = D.P.parcels.reduce((a, p) => { const q = people(p, p[sc]); a.f += q.f; a.r += q.r; a.j += q.j; return a; }, { f: 0, r: 0, j: 0 });
   document.getElementById("kpi").innerHTML =
     `<div><b>${fmt(T.gf_allow)}</b><span>m² allowed by the plan</span></div>
      <div><b>${fmt(T.gf_ex)}</b><span>m² built today (${Math.round(100 * T.gf_ex / T.gf_allow)}%)</span></div>
      <div class="t"><b>+${fmt(T.theo)}</b><span>m² still free on paper</span></div>
-     <div class="f"><b>+${fmt(T[sc])}</b><span>m² in "${SC[sc].short}"${h >= 1 ? ` · ≈ ${fmt(h)} homes` : ""}</span></div>`;
+     <div class="f"><b>+${fmt(T[sc])}</b><span>m² in "${SC[sc].short}"</span></div>
+     <div class="pp"><b>≈ ${fmt(tot.f)} flats · ${fmt(tot.r)} residents</b><span>${mu ? "if the commercial zone allowed homes (MU)" : "residential parcels only: homes are not allowed in the commercial zone (GE)"}</span></div>
+     ${mu ? "" : `<div class="jj"><b>≈ ${fmt(tot.j)} workplaces</b><span>in the commercial zone, if the new space were offices</span></div>`}`;
 }
 function bar(label, v, max, col) {
   return `<div class="bar"><div class="l"><span>${label}</span><b>${fmt(v)} m²</b></div><div class="t"><i style="width:${Math.min(100, 100 * v / Math.max(1, max))}%;background:${col}"></i></div></div>`;
@@ -176,8 +185,9 @@ function detail(p) {
     ${bar("Built today", p.gf_ex, max, C.ex)}
     ${bar("Still free on paper", p.theo, max, C.paper)}
     <div class="sct">${["s1", "s2", "s3"].map(k => `<span class="${k === sc ? "on" : ""}"><em>${SC[k].short}</em><b>+${fmt(p[k])}</b></span>`).join("")}</div>
-    <p class="why">${why(p)}</p>
-    ${p.buildings.length ? `<ul class="blist"><li class="h"><span>Buildings today</span><b>storeys now → limit</b></li>${p.buildings.map(b => `<li><span>${b.addr || "Building"} · ${fmt(b.fp)} m²${b.listed ? " · listed" : ""}</span><b>${ROM[b.st] || b.st} → ${ROM[b.lim] || b.lim}${b[addKey] && sc !== "s3x" ? ` <em>+${b[addKey]}</em>` : ""}</b></li>`).join("")}</ul>` : `<p class="fine">No building on this parcel today.</p>`}
+    <p class="why">${why(p)}${(() => { const q = people(p, p[sc]); if (p[sc] < 1) return "";
+      return housing(p) ? ` <b>≈ ${q.f} flat${q.f === 1 ? "" : "s"} · ≈ ${fmt(q.r)} residents</b>${p.use === "GE" ? " (only if this were MU)" : ""}.` : ` <b>Commercial space, no homes allowed (GE):</b> ≈ ${fmt(q.j)} workplaces if offices.`; })()}</p>
+    ${p.buildings.length ? `<ul class="blist"><li class="h"><span>Buildings today</span><b>storeys now → limit</b></li>${p.buildings.map(b => `<li><span>${b.addr || "Building"} · ${fmt(b.fp)} m²${b.listed ? " · listed" : ""}</span><b>${ROM[b.st] || b.st} → ${ROM[b.lim] || b.lim}${b[addKey] ? ` <em>+${b[addKey]}${housing(p) && flats(b.fp * b[addKey]) ? ` · ${flats(b.fp * b[addKey])} flat${flats(b.fp * b[addKey]) > 1 ? "s" : ""}` : ""}</em>` : ""}</b></li>`).join("")}</ul>` : `<p class="fine">No building on this parcel today.</p>`}
     <div class="nav"><button data-d="-1">← previous</button><button data-d="0">close ✕</button><button data-d="1">next →</button></div>`;
 }
 function order() {

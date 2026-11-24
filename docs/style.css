@@ -78,3 +78,7 @@ body.far .pnum:not(.on) { display: none; } body.far .street { font-size: 10.5px;
 .sct { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 8px 0 2px; } .sct span { background: #f5f3ef; border-radius: 7px; padding: 5px 7px; font-size: 11px; color: var(--ink2); }
 .sct span.on { background: #e3f2ef; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--feas); } .sct em { display: block; font-style: normal; } .sct b { font: 600 13px var(--mono); color: var(--feas); }
 .blist em { color: #3d7fc1; }
+label.mu { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; color: var(--ink2); background: #fbf6ee; border: 1px solid #efe2cb; border-radius: 9px; padding: 8px 10px; margin: 10px 0 6px; cursor: pointer; }
+label.mu input { accent-color: #c0782a; margin-top: 2px; } body.mu label.mu { background: #fdf0de; border-color: #e2b878; color: var(--ink); }
+#kpi .pp, #kpi .jj { grid-column: 1 / -1; } #kpi .pp b, #kpi .jj b { font-size: 15px; } #kpi .pp { background: #eef6f4; } #kpi .jj { background: #f4f2ee; }
+.why b { font-weight: 600; }
